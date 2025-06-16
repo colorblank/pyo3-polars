@@ -43,3 +43,30 @@ def append_args(
         function_name="append_kwargs",
         is_elementwise=True,
     )
+
+
+def extract_and_pad(
+    expr: IntoExprColumn,
+    sep1: str = "|",
+    sep2: str = "#",
+    index: int = 0,
+    max_len: int = 5,
+    pad_value: str = "NULL",
+) -> pl.Expr:
+    """
+    Splits a string by sep1, then splits each part by sep2 and extracts the element at 'index'.
+    Pads the resulting list to 'max_len' with 'pad_value'.
+    """
+    return register_plugin_function(
+        plugin_path=LIB,
+        args=[expr],
+        kwargs={
+            "sep1": sep1,
+            "sep2": sep2,
+            "index": index,
+            "max_len": max_len,
+            "pad_value": pad_value,
+        },
+        function_name="extract_and_pad",
+        is_elementwise=True,
+    )
