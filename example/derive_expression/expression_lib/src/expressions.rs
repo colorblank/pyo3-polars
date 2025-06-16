@@ -1,10 +1,10 @@
+use fasthash::xx::hash32;
 use polars::prelude::*;
 use polars_plan::dsl::FieldsMapper;
 use pyo3_polars::derive::{polars_expr, CallerContext};
 use pyo3_polars::export::polars_core::POOL;
 use serde::Deserialize;
 use std::fmt::Write;
-use fasthash::xx::hash32;
 
 #[derive(Deserialize)]
 struct PigLatinKwargs {
@@ -170,7 +170,10 @@ fn haversine(inputs: &[Series]) -> PolarsResult<Series> {
 
 pub fn extract_and_pad_output(input_fields: &[Field]) -> PolarsResult<Field> {
     let field = &input_fields[0];
-    Ok(Field::new(field.name().to_string().into(), DataType::List(Box::new(DataType::String))))
+    Ok(Field::new(
+        field.name().to_string().into(),
+        DataType::List(Box::new(DataType::String)),
+    ))
 }
 
 #[polars_expr(output_type_func=extract_and_pad_output)]
