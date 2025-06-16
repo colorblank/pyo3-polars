@@ -1,7 +1,8 @@
-import polars as pl
-from datetime import date, datetime, timezone
-from expression_lib import language, dist, date_util, panic
 import time
+from datetime import date, datetime, timezone
+
+import polars as pl
+from expression_lib import date_util, dist, language, panic
 
 df = pl.DataFrame(
     {
@@ -68,9 +69,15 @@ out = df.with_columns(
 
 print(out)
 
+
 # Python implementation for comparison
 def python_extract_and_pad(
-    s: str, sep1: str = "|", sep2: str = "#", index: int = 0, max_len: int = 5, pad_value: str = "NULL"
+    s: str,
+    sep1: str = "|",
+    sep2: str = "#",
+    index: int = 0,
+    max_len: int = 5,
+    pad_value: str = "NULL",
 ) -> list[str]:
     extracted_elements = []
     if s is not None:
@@ -89,19 +96,18 @@ def python_extract_and_pad(
         extracted_elements = extracted_elements[:max_len]
     return extracted_elements
 
+
 # Performance comparison
 print("\n--- Performance Comparison ---")
 N_ROWS = 1_000_000
-test_df = pl.DataFrame({
-    "data_str": ["aa#0.5|bbb#0.3|ccc#0.2"] * N_ROWS
-})
+test_df = pl.DataFrame({"data_str": ["aa#0.5|bbb#0.3|ccc#0.2"] * N_ROWS})
 
 # Rust UDF performance
 start_time = time.perf_counter()
 rust_out = test_df.with_columns(
-    pl.col("data_str").language.extract_and_pad(
-        sep1="|", sep2="#", index=0, max_len=5, pad_value="NULL"
-    ).alias("rust_result")
+    pl.col("data_str")
+    .language.extract_and_pad(sep1="|", sep2="#", index=0, max_len=5, pad_value="NULL")
+    .alias("rust_result")
 )
 end_time = time.perf_counter()
 rust_time = end_time - start_time
@@ -110,10 +116,14 @@ print(f"Rust UDF execution time: {rust_time:.4f} seconds")
 # Python UDF performance (using apply)
 start_time = time.perf_counter()
 python_out = test_df.with_columns(
-    pl.col("data_str").map_elements(
-        lambda s: python_extract_and_pad(s, sep1="|", sep2="#", index=0, max_len=5, pad_value="NULL"),
-        return_dtype=pl.List(pl.String)
-    ).alias("python_result")
+    pl.col("data_str")
+    .map_elements(
+        lambda s: python_extract_and_pad(
+            s, sep1="|", sep2="#", index=0, max_len=5, pad_value="NULL"
+        ),
+        return_dtype=pl.List(pl.String),
+    )
+    .alias("python_result")
 )
 end_time = time.perf_counter()
 python_time = end_time - start_time
