@@ -4,6 +4,7 @@ use pyo3_polars::derive::{polars_expr, CallerContext};
 use pyo3_polars::export::polars_core::POOL;
 use serde::Deserialize;
 use std::fmt::Write;
+use fasthash::xx::hash32;
 
 #[derive(Deserialize)]
 struct PigLatinKwargs {
@@ -17,6 +18,28 @@ struct ExtractAndPadKwargs {
     index: usize,
     max_len: usize,
     pad_value: String,
+}
+
+#[derive(Deserialize)]
+struct HashModulusKwargs {
+    dictionary_size: u32,
+}
+
+#[polars_expr(output_type=UInt32)]
+fn hash_and_modulus(inputs: &[Series], kwargs: HashModulusKwargs) -> PolarsResult<Series> {
+    let ca = inputs[0].str()?;
+    let dictionary_size = kwargs.dictionary_size;
+
+    let out: UInt32Chunked = ca
+        .iter()
+        .map(|opt_value| {
+            opt_value.map(|value| {
+                let hash_value = hash32(value.as_bytes());
+                hash_value % dictionary_size
+            })
+        })
+        .collect_ca(ca.name().clone());
+    Ok(out.into_series())
 }
 
 fn pig_latin_str(value: &str, capitalize: bool, output: &mut String) {

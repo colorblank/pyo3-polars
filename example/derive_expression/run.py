@@ -17,6 +17,7 @@ df = pl.DataFrame(
         "end_lat": [6.6, -1243.8, 240.224],
         "end_lon": [3.9, -2, 130],
         "data_str": ["aa#0.5|bbb#0.3|ccc#0.2", "x#1.0|y#2.0", "p#0.1"],
+        "strings": pl.Series(["aa", "bbb", "ccc"], dtype=pl.String),
     }
 )
 
@@ -39,6 +40,7 @@ out = df.with_columns(
     extracted_and_padded=language.extract_and_pad(
         "data_str", sep1="|", sep2="#", index=0, max_len=5, pad_value="NULL"
     ),
+    hashed_strings=language.hash_and_modulus("strings", dictionary_size=10),
 )
 
 print(out)
@@ -65,6 +67,7 @@ out = df.with_columns(
     extracted_and_padded_expr=pl.col("data_str").language.extract_and_pad(
         sep1="|", sep2="#", index=0, max_len=5, pad_value="NULL"
     ),
+    hashed_strings_expr=pl.col("strings").language.hash_and_modulus(dictionary_size=10),
 )
 
 print(out)

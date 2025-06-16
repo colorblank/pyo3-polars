@@ -32,7 +32,7 @@ class Language:
         self._expr = expr
 
     def __getattr__(self, attr: str) -> Callable[..., pl.Expr]:
-        if attr in ("pig_latinnify", "append_args", "extract_and_pad"):
+        if attr in ("pig_latinnify", "append_args", "extract_and_pad", "hash_and_modulus"):
 
             def func(*args: Any, **kwargs: Any) -> pl.Expr:
                 return getattr(language, attr)(self._expr, *args, **kwargs)

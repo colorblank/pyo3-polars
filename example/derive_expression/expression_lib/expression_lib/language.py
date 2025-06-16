@@ -21,6 +21,40 @@ def pig_latinnify(expr: IntoExprColumn, capitalize: bool = False) -> pl.Expr:
     )
 
 
+def hash_and_modulus(expr: IntoExprColumn, dictionary_size: int) -> pl.Expr:
+    """
+    将输入的字符串列表通过hash映射为数值，然后通过取余数，约束到指定的字典大小。
+    Args:
+        expr (IntoExprColumn): 输入的字符串列。
+        dictionary_size (int): 字典大小，用于取余数。
+    Returns:
+        pl.Expr: 包含哈希并取模后数值的表达式。
+    Examples:
+        >>> import polars as pl
+        >>> from expression_lib import language
+        >>> df = pl.DataFrame({"strings": ["aa", "bbb", "ccc", "null", "null"]})
+        >>> df.with_columns(language.hash_and_modulus("strings", dictionary_size=10))
+        shape: (5, 2)
+        ┌─────────┬──────────────────┐
+        │ strings ┆ strings_hashed   │
+        │ str     ┆ u32              │
+        ╞═════════╪══════════════════╡
+        │ aa      ┆ 2                │
+        │ bbb     ┆ 9                │
+        │ ccc     ┆ 0                │
+        │ null    ┆ 5                │
+        │ null    ┆ 5                │
+        └─────────┴──────────────────┘
+    """
+    return register_plugin_function(
+        plugin_path=LIB,
+        args=[expr],
+        function_name="hash_and_modulus",
+        is_elementwise=True,
+        kwargs={"dictionary_size": dictionary_size},
+    )
+
+
 def append_args(
     expr: IntoExprColumn,
     float_arg: float,
