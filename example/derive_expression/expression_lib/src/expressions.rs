@@ -10,6 +10,15 @@ struct PigLatinKwargs {
     capitalize: bool,
 }
 
+#[derive(Deserialize)]
+struct ExtractAndPadKwargs {
+    sep1: String,
+    sep2: String,
+    index: usize,
+    max_len: usize,
+    pad_value: String,
+}
+
 fn pig_latin_str(value: &str, capitalize: bool, output: &mut String) {
     if let Some(first_char) = value.chars().next() {
         if capitalize {
@@ -134,6 +143,50 @@ fn haversine(inputs: &[Series]) -> PolarsResult<Series> {
         _ => unimplemented!(),
     };
     Ok(out)
+}
+
+pub fn extract_and_pad_output(input_fields: &[Field]) -> PolarsResult<Field> {
+    let field = &input_fields[0];
+    Ok(Field::new(field.name().to_string().into(), DataType::List(Box::new(DataType::String))))
+}
+
+#[polars_expr(output_type_func=extract_and_pad_output)]
+fn extract_and_pad(inputs: &[Series], kwargs: ExtractAndPadKwargs) -> PolarsResult<Series> {
+    let ca = inputs[0].str()?;
+    let mut builder = ListStringChunkedBuilder::new(
+        inputs[0].name().to_string().into(),
+        ca.len(),
+        kwargs.max_len,
+    );
+
+    for opt_s in ca.iter() {
+        let mut extracted_elements: Vec<Option<String>> = Vec::new();
+        if let Some(s) = opt_s {
+            let parts1: Vec<&str> = s.split(&kwargs.sep1).collect();
+            for part1 in parts1 {
+                let parts2: Vec<&str> = part1.split(&kwargs.sep2).collect();
+                if kwargs.index < parts2.len() {
+                    extracted_elements.push(Some(parts2[kwargs.index].to_string()));
+                } else {
+                    extracted_elements.push(Some(kwargs.pad_value.clone()));
+                }
+            }
+        }
+
+        let current_len = extracted_elements.len();
+        if current_len < kwargs.max_len {
+            for _ in current_len..kwargs.max_len {
+                extracted_elements.push(Some(kwargs.pad_value.clone()));
+            }
+        } else if current_len > kwargs.max_len {
+            extracted_elements.truncate(kwargs.max_len);
+        }
+
+        let series_to_append = Series::new("".into(), extracted_elements);
+        let _ = builder.append_opt_series(Some(&series_to_append));
+    }
+
+    Ok(builder.finish().into_series())
 }
 
 /// The `DefaultKwargs` isn't very ergonomic as it doesn't validate any schema.
